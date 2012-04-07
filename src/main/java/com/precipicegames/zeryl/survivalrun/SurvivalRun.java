@@ -3,7 +3,10 @@ package com.precipicegames.zeryl.survivalrun;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map.Entry;
 import java.util.Random;
+
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -11,6 +14,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.PluginManager;
+import org.bukkit.util.Vector;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -42,9 +46,10 @@ public class SurvivalRun extends JavaPlugin implements Listener {
 	}
 	GameConfiguration game = new GameConfiguration();
 	protected HashMap<String,PlayerStatus> participatingPlayers = new HashMap<String,PlayerStatus>();
-	private GameState state = GameState.PAUSED;
+	private GameState state = GameState.STOPPED;
 	private ArrayList<Location> availablespawns;
-	private Random rand = new Random(System.currentTimeMillis());;
+	private Random rand = new Random(System.currentTimeMillis());
+	private HashMap<String, Vector> freeze;;
 
 	
 	
@@ -57,6 +62,9 @@ public class SurvivalRun extends JavaPlugin implements Listener {
 		} catch (Exception e) {
 			game.spawnlocations.add(this.getServer().getWorlds().get(0).getSpawnLocation());
 		}
+		this.availablespawns = new ArrayList<Location>();
+		this.availablespawns.addAll(game.spawnlocations);
+		freeze = new HashMap<String,Vector>();
 		
         PluginManager pm = getServer().getPluginManager();
         pm.registerEvents(this, this);
@@ -77,8 +85,8 @@ public class SurvivalRun extends JavaPlugin implements Listener {
     	if(this.state == GameState.PAUSED || state == GameState.STOPPED) {
     		e.setCancelled(true);
     	} else {
-	    	if(!game.allowBreak && !game.allowMined.contains(e.getBlock().getType()) 
-	    			&& !(participatingPlayers.get(e.getPlayer().getName()) == PlayerStatus.PLAYING)) {
+	    	if((!game.allowBreak && !game.allowMined.contains(e.getBlock().getType())) 
+	    			|| !(participatingPlayers.get(e.getPlayer().getName()) == PlayerStatus.PLAYING)) {
 	    		e.setCancelled(true);
 	    	}
     	}
@@ -90,7 +98,7 @@ public class SurvivalRun extends JavaPlugin implements Listener {
     	if(state == GameState.PAUSED || state == GameState.STOPPED) {
     		e.setCancelled(true);
     	} else {
-	    	if(!game.allowPlace && !(participatingPlayers.get(e.getPlayer().getName()) == PlayerStatus.PLAYING)) {
+	    	if(!game.allowPlace || !(participatingPlayers.get(e.getPlayer().getName()) == PlayerStatus.PLAYING)) {
 	    		e.setCancelled(true);
 	    	}
     	}
@@ -196,10 +204,19 @@ public class SurvivalRun extends JavaPlugin implements Listener {
     	}
     	String name = e.getPlayer().getName();
     	PlayerStatus pstatus = this.participatingPlayers.get(name);
-    	if(pstatus != PlayerStatus.PLAYING || state == GameState.PAUSED) {
-    		if(!e.getFrom().toVector().equals(e.getTo().toVector())) {
-    			e.setCancelled(true);
+    	if((pstatus != PlayerStatus.PLAYING && state == GameState.RUNNING) || pstatus == PlayerStatus.PREPARED || state == GameState.PAUSED) {
+    		Location l = e.getPlayer().getLocation();
+    		Vector v = l.toVector();
+    		Vector previous = freeze.get(name);
+    		if(previous == null) {
+    			freeze.put(name, v);
+    			previous = v;
     		}
+    		if(v.distance(previous) >= 2) {
+    			e.setTo(previous.toLocation(l.getWorld(), l.getYaw(), l.getPitch()));
+    		}
+    	} else {
+    		freeze.remove(name);
     	}
     }
     @EventHandler
@@ -263,6 +280,25 @@ public class SurvivalRun extends JavaPlugin implements Listener {
         			}
         			pauseGame();
         		}
+        		if(args[0].equalsIgnoreCase("list")) {
+        			String msg = "";
+        			for( Entry<String, PlayerStatus>  set: this.participatingPlayers.entrySet()) {
+        				ChatColor c = ChatColor.YELLOW;
+        				switch(set.getValue()) {
+        				case PLAYING:
+        					c = ChatColor.GREEN;
+        					break;
+        				case DEAD:
+        					c = ChatColor.RED;
+        					break;
+        				case PREJOIN:
+        					c = ChatColor.GRAY;
+        					break;
+        				}
+        				msg += c + set.getKey() + " ";
+        			}
+        			sender.sendMessage(msg);
+        		}
         		if(args[0].equalsIgnoreCase("add")) {
         			int count = args.length - 1;
         			for(int i = 0; i < count; i++) {
@@ -293,19 +329,20 @@ public class SurvivalRun extends JavaPlugin implements Listener {
 	public void pauseGame() {
 		if(state == GameState.RUNNING) {
 			state = GameState.PAUSED;
-			this.getServer().broadcastMessage("Game has paused!");
+			this.getServer().broadcastMessage(ChatColor.RED +  "Game has paused!");
 		}
 	}
 
 	public void resumeGame() {
 		if(state == GameState.PAUSED) {
 			state = GameState.RUNNING;
-			this.getServer().broadcastMessage("Game has resumed!");
+			this.getServer().broadcastMessage(ChatColor.RED + "Game has resumed!");
 		}
 	}
 	
 	public void stopGame() {
 		this.state = GameState.STOPPED;
+		this.getServer().broadcastMessage(ChatColor.RED + "Game has stopped");
 		//refresh the available spawn locations
 		this.availablespawns = new ArrayList<Location>();
 		this.availablespawns.addAll(game.spawnlocations);
@@ -331,7 +368,7 @@ public class SurvivalRun extends JavaPlugin implements Listener {
 			}
 		}
 		this.state = GameState.RUNNING;
-		this.getServer().broadcastMessage("Game has started!");
+		this.getServer().broadcastMessage(ChatColor.RED + "Game has started!");
 	}
 	
     public void startGame(int i,long wait, String message) {
