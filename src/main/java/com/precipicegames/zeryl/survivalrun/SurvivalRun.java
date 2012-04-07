@@ -1,11 +1,13 @@
 package com.precipicegames.zeryl.survivalrun;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.PluginManager;
@@ -47,8 +49,17 @@ public class SurvivalRun extends JavaPlugin implements Listener {
 	
 	
     public void onEnable() {
+    	this.getDataFolder().mkdirs();
+    	File file = new File(this.getDataFolder(),"config.yml");
+    	YamlConfiguration config = new YamlConfiguration();
+    	try {
+			config.load(file);
+		} catch (Exception e) {
+			game.spawnlocations.add(this.getServer().getWorlds().get(0).getSpawnLocation());
+		}
+		
         PluginManager pm = getServer().getPluginManager();
-        
+        pm.registerEvents(this, this);
         PluginDescriptionFile pdf = this.getDescription();
         System.out.println(pdf.getName() + " is now enabled.");
     }

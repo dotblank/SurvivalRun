@@ -1,7 +1,6 @@
 package com.precipicegames.zeryl.survivalrun;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Vector;
 
@@ -9,7 +8,6 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Server;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.entity.Player;
 
 public class GameConfiguration {
 	protected Vector<Material> allowMined = new Vector<Material>();

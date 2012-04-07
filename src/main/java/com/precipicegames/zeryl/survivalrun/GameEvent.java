@@ -1,6 +1,5 @@
 package com.precipicegames.zeryl.survivalrun;
 
-import com.precipicegames.zeryl.survivalrun.GameEvent.action;
 
 public class GameEvent implements Runnable {
 	public enum action {
