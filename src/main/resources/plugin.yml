@@ -2,11 +2,24 @@ name: ${name}
 main: ${groupId}.${artifactId}
 version: ${version}
 commands:
-    examplecommand:
+    game:
         description: Command Description
         usage: |
             /<command> command parms - Command Description
+        permission: survivalrun.admin 
+    join:
+        description: join
+        usage: |
+            /join - Join the game
+        permission: survivalrun.join
 permissions:
-    example.perm:
-        description: What this perm does
+    survivalrun.bypass:
+        description: Bypasses restrictions
         default: op
+    survivalrun.admin:
+        description: Control the game
+        default: op
+    survivalrun.join:
+        description: Ability to join the game
+        default: true
+

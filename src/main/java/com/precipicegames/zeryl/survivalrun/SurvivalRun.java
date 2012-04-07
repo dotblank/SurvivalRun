@@ -263,10 +263,30 @@ public class SurvivalRun extends JavaPlugin implements Listener {
         			}
         			pauseGame();
         		}
+        		if(args[0].equalsIgnoreCase("add")) {
+        			int count = args.length - 1;
+        			for(int i = 0; i < count; i++) {
+        				Player p = this.getServer().getPlayer(args[i + 1]);
+        				if(p != null) {
+        					this.addPlayer(sender, p.getName());
+        				} else {
+        					this.addPlayer(sender, args[i+1]);
+        					sender.sendMessage("WARN: " + args[i+1] + "is not online adding offline player");
+        				}
+        			}
+        			if(count == 0) {
+        				sender.sendMessage("You need to specify at least one player");
+        			}
+        		}
         	}
         }
-
-
+        if (cmd.getName().equalsIgnoreCase("join") && sender instanceof Player) {
+        	Player p = (Player)sender;
+        	if(args.length != 0) {
+        	
+        	}
+        	this.addPlayer(p);
+        }
         return true;
     }
 
